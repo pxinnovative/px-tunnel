@@ -84,7 +84,8 @@ We're building in public and want your input. PX Tunnel is part of [PX Open Suit
 
 ## Roadmap
 - [x] Auth + RBAC + tenants + deny-by-default ACL + add-device + node actions (v0.0.1)
-- [ ] Devices model UI — list + card views, device detail, "system" infra section
+- [x] Devices model UI — flat device list, list + card views, tenant filter, collapsed "system" infra section (v0.1.0)
+- [ ] Device detail view
 - [ ] Users & invites UI (roles, invite by link/email, transfer ownership)
 - [ ] Access-control editor (HuJSON policy + groups/tags/hosts)
 - [ ] Audit logs, DNS & settings, light/dark theme

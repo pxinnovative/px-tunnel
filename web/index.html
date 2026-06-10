@@ -25,15 +25,24 @@
   .hdr-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .uchip{font-size:12px;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 10px;white-space:nowrap}
   main{padding:20px 24px;max-width:1080px;margin:0 auto}
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .toolbar label{margin:0;font-size:12px;color:var(--dim);font-weight:600}
+  .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-left:auto}
+  .seg button{font:inherit;font-size:12px;font-weight:600;color:var(--dim);background:var(--panel);border:0;padding:6px 12px;cursor:pointer}
+  .seg button.on{background:var(--panel2);color:var(--accent)}
   .links{display:flex;flex-direction:column;gap:10px}
-  .tenant-hd{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;
-    letter-spacing:.6px;color:var(--dim);margin:18px 0 9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
-  .tenant-hd:first-child{margin-top:0}
-  .tenant-hd .tdesc{font-weight:400;text-transform:none;letter-spacing:0;color:var(--off)}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
     padding:12px 14px;display:flex;align-items:center;gap:13px;transition:border-color .15s}
   .card:hover{border-color:#2f3b4d}
   .card.unexpected{border-color:var(--bad);box-shadow:0 0 0 1px rgba(248,81,73,.25) inset}
+  .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+  .dcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;transition:border-color .15s}
+  .dcard:hover{border-color:#2f3b4d}
+  .dcard.unexpected{border-color:var(--bad);box-shadow:0 0 0 1px rgba(248,81,73,.25) inset}
+  .dcard .hd{display:flex;align-items:center;gap:8px}
+  .dcard .nm{font-weight:650;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dcard .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0}
+  .dcard .ft{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
   .sdot{width:10px;height:10px;border-radius:50%;flex:none}
   .sdot.online{background:var(--ok);box-shadow:0 0 8px var(--ok)}
   .sdot.idle{background:var(--warn)} .sdot.offline{background:var(--off)}
@@ -43,9 +52,11 @@
   .lyr.nordvpn{background:rgba(163,113,247,.15);color:var(--nord)}
   .lyr.headscale-node{background:rgba(63,185,80,.15);color:var(--mesh)}
   .lyr.app-tailnet{background:rgba(110,118,129,.15);color:var(--app)}
+  .tchip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+    background:rgba(77,163,255,.12);color:var(--accent);border-radius:5px;padding:2px 7px;flex:none}
+  .tchip.infra{background:rgba(110,118,129,.15);color:var(--off)}
   .body{flex:1;min-width:0}
   .route{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .route .arrow{color:var(--dim)}
   .iface{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
     color:var(--dim);background:var(--panel2);padding:1px 6px;border-radius:4px}
   .purpose{color:var(--dim);font-size:12.5px;margin-top:3px}
@@ -56,8 +67,15 @@
   .badge.bad{background:rgba(248,81,73,.18);color:var(--bad)}
   .badge.warn{background:rgba(210,153,34,.18);color:var(--warn)}
   .badge.crit{background:rgba(248,81,73,.12);color:#ff9b94}
+  .seen{font-size:11px;color:var(--dim);white-space:nowrap;text-align:right}
   .tput{font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);text-align:right;min-width:92px}
   .acts{display:flex;gap:5px;flex-wrap:wrap}
+  .sysbox{margin-top:22px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .sysbox summary{cursor:pointer;padding:12px 14px;font-size:12px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.6px;color:var(--dim);user-select:none}
+  .sysbox summary:hover{color:var(--txt)}
+  .sysbox .inner{padding:0 14px 14px}
+  .ct{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:1px 8px;font-size:11px;margin-left:4px}
   footer{padding:14px 24px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;
     display:flex;gap:20px;flex-wrap:wrap;align-items:center}
   .ver{font-family:ui-monospace,monospace}.ago{margin-left:auto}
@@ -107,14 +125,25 @@
   <div class="hdr-btns">
     <span class="uchip" id="uchip" title="Signed-in account"></span>
     <button class="btn" id="pwBtn" title="Change your own password">Password</button>
-    <button class="btn" id="manageBtn" title="Manage tenants, users and per-tenant tunnels">⚙ Manage</button>
+    <button class="btn" id="manageBtn" title="Manage tenants and access users">⚙ Manage</button>
     <button class="btn primary" id="addBtn" title="Generate a join command for a device in a tenant">+ Add device</button>
     <button class="btn" id="logoutBtn" title="Sign out">Logout</button>
   </div>
 </header>
 <main>
-  <div style="margin-bottom:14px"><label style="display:inline-block;margin:0 8px 0 0;font-size:12px">View tenant:</label><select id="tenantFilter" style="width:auto;display:inline-block;min-width:180px"><option value="all">All tenants</option></select></div>
-  <div class="links" id="links"><div class="empty">Loading tunnels…</div></div>
+  <div class="toolbar">
+    <label for="tenantFilter">Tenant:</label>
+    <select id="tenantFilter" style="width:auto;min-width:180px"><option value="all">All tenants</option></select>
+    <div class="seg" role="group" aria-label="View">
+      <button id="vList" type="button">☰ List</button>
+      <button id="vCards" type="button">▦ Cards</button>
+    </div>
+  </div>
+  <div class="links" id="devices"><div class="empty">Loading devices…</div></div>
+  <details class="sysbox" id="sysWrap" style="display:none">
+    <summary>⚙ System<span class="ct" id="sysCount"></span> — raw WireGuard / VPN interface links</summary>
+    <div class="inner"><div class="links" id="sysRows"></div></div>
+  </details>
 </main>
 <footer><span id="versions"></span><span id="support"></span><span class="ago" id="ago"></span></footer>
 
@@ -140,15 +169,15 @@
   <div class="row"><button class="btn" id="addCancel">Cancel</button><button class="btn primary" id="addGo">Generate join command</button></div>
 </div></div>
 
-<!-- edit tunnel modal -->
+<!-- edit device modal -->
 <div class="modal" id="editModal"><div class="box">
-  <h2>Edit tunnel</h2>
-  <p class="hint">Name and type the far end of this tunnel — sets the icon and label on the card.</p>
+  <h2>Edit device</h2>
+  <p class="hint">Name and type this device — sets the icon and label on its row or card.</p>
   <div class="grid2">
-    <div><label>Peer name</label><input id="etLabel" placeholder="e.g. office-server" autocapitalize="off"></div>
-    <div><label>Peer type</label><select id="etType"></select></div>
+    <div><label>Device name</label><input id="etLabel" placeholder="e.g. office-server" autocapitalize="off"></div>
+    <div><label>Device type</label><select id="etType"></select></div>
   </div>
-  <label>Description</label><input id="etDesc" placeholder="what this tunnel is for">
+  <label>Description</label><input id="etDesc" placeholder="what this device is for">
   <input type="hidden" id="etId">
   <div class="row"><button class="btn" id="etCancel">Cancel</button><button class="btn primary" id="etSave">Save</button></div>
 </div></div>
@@ -179,14 +208,6 @@
       <div><label>Initial password (min 8 chars)</label><input id="nuPass" type="password" autocomplete="new-password" placeholder="set a login password"></div>
     </div>
     <div class="row"><button class="btn primary" id="nuCreate">+ Add user</button></div>
-  </div>
-  <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:8px">
-    <label>This node — the near end shown on every tunnel</label>
-    <div class="grid2">
-      <div><input id="lnName" placeholder="e.g. gateway" autocapitalize="off"></div>
-      <div><select id="lnType"></select></div>
-    </div>
-    <div class="row"><button class="btn" id="lnSave">Save this node</button></div>
   </div>
   <div class="row" style="border-top:1px solid var(--line);padding-top:12px"><button class="btn" id="manageClose">Close</button></div>
 </div></div>
@@ -221,80 +242,121 @@ function info(title,sub,cmd){ $("#mTitle").textContent=title; $("#mSub").textCon
 $("#mClose").onclick=()=>$("#modal").classList.remove("show");
 $("#mCopy").onclick=()=>navigator.clipboard&&navigator.clipboard.writeText($("#mCmd").textContent);
 
-// ── tunnels view ──
+// ── devices view (list / cards toggle, persisted) ──
+let VIEW = "list";
+try{ VIEW = localStorage.getItem("pxt_view") || "list"; }catch(e){}
+function setView(v){ VIEW=v; try{localStorage.setItem("pxt_view",v)}catch(e){}
+  $("#vList").classList.toggle("on",v==="list"); $("#vCards").classList.toggle("on",v==="cards");
+  if(window._lastState) render(window._lastState); }
+$("#vList").onclick=()=>setView("list"); $("#vCards").onclick=()=>setView("cards");
+
+const lastSeen = l => { if(l.online) return `<span style="color:var(--ok)">online</span>`;
+  const t=l.last_seen?Date.parse(l.last_seen):NaN;
+  return Number.isFinite(t)?"last seen "+ago(Math.max(0,(Date.now()-t)/1000))+" ago":"offline"; };
+const tchip = t => `<span class="tchip ${t===INFRA()?"infra":""}" title="${esc((window._tdesc||{})[t]||"")}">${t===INFRA()?"⚙ ":""}${esc(t)}</span>`;
+function badges(l){ const f=(l.security||{}).flags||[], b=[];
+  if(l.exit_node)b.push(`<span class="badge exit">exit</span>`);
+  if(l.criticality==="critical")b.push(`<span class="badge crit">critical</span>`);
+  if(f.includes("unexpected_peer"))b.push(`<span class="badge bad">unexpected</span>`);
+  if(f.includes("stale_handshake"))b.push(`<span class="badge warn">stale</span>`);
+  return b.join(""); }
+function devActs(l){ if(!canAct()) return ""; const nid=(l.id||"").split(":").pop();
+  return `<span class="acts">${(l.routes_available&&l.routes_available.length)?`<button class="btn sm" onclick="nodeAct('${nid}','approve')" title="Approve advertised subnet routes">approve</button>`:""}<button class="btn sm" onclick="nodeAct('${nid}','exit-node')" title="Advertise this device as an exit node">exit-node</button><button class="btn sm" onclick="nodeRename('${nid}')">rename</button><button class="btn sm" onclick="nodeAct('${nid}','expire')">disconnect</button><button class="btn sm danger" onclick="nodeAct('${nid}','delete')">remove</button></span>`; }
+const chips = l => { const a=(l.endpoint_b||{}).addr;
+  return (a?`<span class="iface">${esc(a)}</span>`:"")+(l.subnet||[]).slice(0,2).map(s=>`<span class="iface">${esc(s)}</span>`).join(""); };
+const descLine = l => { const d=l.description||l.purpose||"— no description —";
+  return `<div class="purpose">${esc(d)}${canAct()?`<span class="edit" onclick="editDevice('${esc(l.id)}')" title="Edit name, type &amp; description">✎</span>`:""}</div>`; };
+
+function devRow(l){ const f=(l.security||{}).flags||[];
+  return `<div class="card ${f.includes("unexpected_peer")?"unexpected":""}">
+    <span class="sdot ${esc(l.status||"offline")}"></span>
+    <div class="body">
+      <div class="route"><span title="${esc(l.peer_type||"")}">${icon(l.peer_type)}</span> <b>${esc(l.peer_label||endpointLabel(l))}</b> ${tchip(l.tenant||INFRA())} ${chips(l)}</div>
+      ${descLine(l)}
+    </div>
+    <div class="meta">${badges(l)}${devActs(l)}<span class="seen">${lastSeen(l)}</span></div>
+  </div>`; }
+
+function devCard(l){ const f=(l.security||{}).flags||[];
+  return `<div class="dcard ${f.includes("unexpected_peer")?"unexpected":""}">
+    <div class="hd"><span class="sdot ${esc(l.status||"offline")}"></span><span title="${esc(l.peer_type||"")}">${icon(l.peer_type)}</span><span class="nm">${esc(l.peer_label||endpointLabel(l))}</span></div>
+    <div class="chips">${tchip(l.tenant||INFRA())} ${chips(l)}</div>
+    ${descLine(l)}
+    <div class="ft"><span>${badges(l)}</span><span class="seen">${lastSeen(l)}</span></div>
+    ${canAct()?`<div class="ft">${devActs(l)}</div>`:""}
+  </div>`; }
+
+function sysRow(l){ const f=(l.security||{}).flags||[];
+  const rx=l.throughput&&l.throughput.rx_bytes, tx=l.throughput&&l.throughput.tx_bytes;
+  const tput=(rx!=null||tx!=null)?`↓${fmtBytes(rx)} ↑${fmtBytes(tx)}`:"";
+  const hs=l.handshake_age_s!=null?`handshake ${ago(l.handshake_age_s)}`:"";
+  return `<div class="card ${f.includes("unexpected_peer")?"unexpected":""}">
+    <span class="sdot ${esc(l.status||"offline")}"></span>
+    <span class="lyr ${esc(l.layer)}">${esc((l.layer||"").replace("-"," "))}</span>
+    <div class="body">
+      <div class="route"><span title="${esc(l.peer_type||"")}">${icon(l.peer_type)} ${esc(l.peer_label||endpointLabel(l))}</span> <span class="iface">${esc(l.iface)}</span>${(l.subnet||[]).slice(0,2).map(s=>`<span class="iface">${esc(s)}</span>`).join("")}</div>
+      ${descLine(l)}
+    </div>
+    <div class="meta">${badges(l)}<span class="tput">${tput}<br><span style="color:var(--off)">${hs}</span></span></div>
+  </div>`; }
+
 function render(d){
-  $("#host").textContent = d.host + " · " + d.links.length + " tunnels";
-  const p=d.posture||{}; const alerts=(p.unexpected||[]).length+(p.stale||[]).length;
-  $("#stats").innerHTML = `<div class="stat"><b>${p.online||0}/${p.total||0}</b><span>online</span></div>
-    <div class="stat"><b>${(p.tenants||[]).length}</b><span>tenants</span></div>
-    <div class="stat"><b>${(p.exit_nodes||[]).length}</b><span>exit nodes</span></div>
-    <div class="stat ${alerts?'alert':''}"><b>${alerts}</b><span>alerts</span></div>`;
   window._lastState=d;
-  const known=window._tdesc?Object.keys(window._tdesc):[]; const tns=[...new Set([...((d.posture&&d.posture.tenants)||[]),...known])].sort((a,b)=>a===INFRA()?-1:(b===INFRA()?1:a.localeCompare(b))); const fsel=$("#tenantFilter"); const fcur=fsel.value||"all";
+  const all=d.links||[];
+  const allDev=all.filter(l=>l.layer==="headscale-node");
+  const p=d.posture||{}; const alerts=(p.unexpected||[]).length+(p.stale||[]).length;
+  // tenant filter (infra tenant first, then alphabetical)
+  const known=window._tdesc?Object.keys(window._tdesc):[];
+  const tns=[...new Set([...(p.tenants||[]),...known])].sort((a,b)=>a===INFRA()?-1:(b===INFRA()?1:a.localeCompare(b)));
+  const fsel=$("#tenantFilter"); const fcur=fsel.value||"all";
   fsel.innerHTML=`<option value="all">All tenants</option>`+tns.map(t=>`<option value="${esc(t)}">${t===INFRA()?esc(t)+" · infrastructure":esc(t)}</option>`).join("");
   fsel.value=(fcur==="all"||tns.includes(fcur))?fcur:"all";
-  const order={"raw-wg":0,"headscale-node":1,"nordvpn":2,"app-tailnet":3};
-  let links=[...d.links].sort((a,b)=>{const ta=a.tenant||INFRA(),tb=b.tenant||INFRA();
-    if(ta!==tb)return ta===INFRA()?-1:(tb===INFRA()?1:ta.localeCompare(tb));return (order[a.layer]??9)-(order[b.layer]??9);});
-  if(fsel.value!=="all") links=links.filter(l=>(l.tenant||INFRA())===fsel.value);
-  window._links=links;
-  let lastT=null;
-  const hasNodes=links.some(l=>l.layer==="headscale-node");
-  const view=fsel.value; let emptyHint="";
-  if(!hasNodes){
-    if(view!=="all" && view!==INFRA()){
-      emptyHint=`<div class="hintbox">No devices in <b>${esc(view)}</b> yet — use <b>+ Add device</b> to generate a join command and enroll one. It will appear here with exit-node / rename / approve / disconnect / remove actions.</div>`;
-    } else if(view==="all" || view===INFRA()){
-      emptyHint=`<div class="hintbox">No tenant devices enrolled yet. The tunnels shown are system infrastructure — use <b>+ Add device</b> to enroll a Mac / router / server into a tenant.</div>`;
-    }
+  const flt=fsel.value;
+  const vis=flt==="all"?all:all.filter(l=>(l.tenant||INFRA())===flt);
+  window._links=vis;
+  // header stats are global (unfiltered); the list below honors the tenant filter
+  $("#host").textContent=d.host+" · "+allDev.length+(allDev.length===1?" device":" devices");
+  $("#stats").innerHTML=`<div class="stat"><b>${allDev.filter(l=>l.online).length}/${allDev.length}</b><span>devices online</span></div>
+    <div class="stat"><b>${tns.filter(t=>t!==INFRA()).length}</b><span>tenants</span></div>
+    <div class="stat"><b>${allDev.filter(l=>l.exit_node).length}</b><span>exit nodes</span></div>
+    <div class="stat ${alerts?'alert':''}"><b>${alerts}</b><span>alerts</span></div>`;
+  // devices (flat, headscale nodes only)
+  const devices=vis.filter(l=>l.layer==="headscale-node").sort((a,b)=>{
+    const ta=a.tenant||INFRA(), tb=b.tenant||INFRA();
+    if(ta!==tb) return ta===INFRA()?-1:(tb===INFRA()?1:ta.localeCompare(tb));
+    return String(a.peer_label||"").localeCompare(String(b.peer_label||"")); });
+  const box=$("#devices"); const cardsView=VIEW==="cards"&&devices.length;
+  box.className=cardsView?"cardgrid":"links";
+  if(devices.length){
+    box.innerHTML=devices.map(l=>cardsView?devCard(l):devRow(l)).join("");
+  } else {
+    box.innerHTML=(flt!=="all"&&flt!==INFRA())
+      ?`<div class="hintbox">No devices in <b>${esc(flt)}</b> yet — use <b>+ Add device</b> to generate a join command and enroll one. It will appear here with exit-node / rename / approve / disconnect / remove actions.</div>`
+      :`<div class="hintbox">No devices enrolled yet — use <b>+ Add device</b> to enroll a Mac / router / server into a tenant. Raw system interfaces live under <b>System</b> below.</div>`;
   }
-  $("#links").innerHTML = emptyHint + links.map(l=>{
-    const sec=l.security||{flags:[]}, flags=sec.flags||[], badges=[];
-    if(l.exit_node)badges.push(`<span class="badge exit">exit</span>`);
-    if(l.criticality==="critical")badges.push(`<span class="badge crit">critical</span>`);
-    if(flags.includes("unexpected_peer"))badges.push(`<span class="badge bad">unexpected</span>`);
-    if(flags.includes("stale_handshake"))badges.push(`<span class="badge warn">stale</span>`);
-    const rx=l.throughput&&l.throughput.rx_bytes, tx=l.throughput&&l.throughput.tx_bytes;
-    const tput=(rx!=null||tx!=null)?`↓${fmtBytes(rx)} ↑${fmtBytes(tx)}`:"";
-    const hs=l.handshake_age_s!=null?`handshake ${ago(l.handshake_age_s)}`:"";
-    const nid=(l.id||"").split(":").pop();
-    const acts=(l.layer==="headscale-node" && canAct())?`<span class="acts">
-      ${(l.routes_available&&l.routes_available.length)?`<button class="btn sm" onclick="nodeAct('${nid}','approve')">approve</button>`:""}
-      <button class="btn sm" onclick="nodeAct('${nid}','exit-node')" title="Advertise this node as an exit node">exit-node</button>
-      <button class="btn sm" onclick="nodeRename('${nid}')">rename</button>
-      <button class="btn sm" onclick="nodeAct('${nid}','expire')">disconnect</button>
-      <button class="btn sm danger" onclick="nodeAct('${nid}','delete')">remove</button></span>`:"";
-    const t=l.tenant||INFRA(); let hd="";
-    if(t!==lastT){lastT=t; const td=(window._tdesc&&window._tdesc[t])||""; const thd=t===INFRA()?"⚙ "+esc(t)+" · infrastructure":"👥 "+esc(t); hd=`<div class="tenant-hd">${thd}${td?`<span class="tdesc">— ${esc(td)}</span>`:""}</div>`;}
-    const desc = l.description || l.purpose || "— no description —";
-    return hd + `<div class="card ${flags.includes("unexpected_peer")?"unexpected":""}">
-      <span class="sdot ${l.status}"></span>
-      <span class="lyr ${l.layer}">${l.layer.replace("-"," ")}</span>
-      <div class="body">
-        <div class="route"><span title="${esc((d.local_node||{}).type||"")}">${icon((d.local_node||{}).type)} ${esc((d.local_node||{}).name||d.host.split(".")[0])}</span> <span class="arrow">⇄</span> <span title="${esc(l.peer_type||"")}">${icon(l.peer_type)} ${esc(l.peer_label||endpointLabel(l))}</span>
-          <span class="iface">${esc(l.iface)}</span>${(l.subnet||[]).slice(0,2).map(s=>`<span class="iface">${esc(s)}</span>`).join("")}</div>
-        <div class="purpose">${esc(desc)}${canAct()?`<span class="edit" onclick="editTunnel('${l.id}')" title="Edit name, type &amp; description">✎</span>`:""}</div>
-      </div>
-      <div class="meta">${badges.join("")}${acts}<span class="tput">${tput}<br><span style="color:var(--off)">${hs}</span></span></div>
-    </div>`;
-  }).join("") || `<div class="empty">No tunnels.</div>`;
+  // system (non-mesh interface links, collapsed)
+  const order={"raw-wg":0,"nordvpn":1,"app-tailnet":2};
+  const system=vis.filter(l=>l.layer!=="headscale-node").sort((a,b)=>(order[a.layer]??9)-(order[b.layer]??9));
+  $("#sysWrap").style.display=system.length?"":"none";
+  $("#sysCount").textContent=system.length;
+  $("#sysRows").innerHTML=system.map(sysRow).join("");
+  // footer
   $("#versions").innerHTML=`<span class="ver">${esc((ME&&ME.brand)||"PX Tunnel")} <b>v${esc(d.app_version||"?")}</b></span> · `+(d.versions||[]).map(v=>`<span class="ver">${esc(v.component)} <b>${esc((v.current||"").split(" ")[0])}</b></span>`).join(" · ");
   $("#ago").textContent="snapshot "+ago(Math.max(0,Math.round(Date.now()/1000-d.generated_at)))+" ago";
 }
 
-// ── per-tunnel actions ──
+// ── per-device actions ──
 async function nodeAct(id,action){
   if(action==="delete" && !confirm("Remove node "+id+" from the mesh?")) return;
   const r=await api("POST","/api/node/"+id+"/"+action,{}); if(r.error) info("Action failed",r.error+" "+(r.detail||"")); tick();
 }
 async function nodeRename(id){ const n=prompt("New node name:"); if(!n) return; const r=await api("POST","/api/node/"+id+"/rename",{name:n}); if(r.error)info("Rename failed",r.error+" "+(r.detail||"")); tick(); }
-async function describe(id){ const l=(window._links||[]).find(x=>x.id===id)||{}; const cur=l.description||l.purpose||""; const v=prompt("Edit this tunnel's description (leave empty to clear it):",cur); if(v==null) return; await api("POST","/api/tunnel/describe",{id:id,description:v}); tick(); }
-window.nodeAct=nodeAct; window.nodeRename=nodeRename; window.describe=describe;
-// ── edit tunnel (peer name + type + description) ──
-function editTunnel(id){ const l=(window._links||[]).find(x=>x.id===id)||{}; $("#etId").value=id; $("#etLabel").value=l.peer_label||""; $("#etType").innerHTML=typeOptions(l.peer_type||"other"); $("#etDesc").value=l.description||""; $("#editModal").classList.add("show"); }
+window.nodeAct=nodeAct; window.nodeRename=nodeRename;
+// ── edit device (name + type + description) ──
+function editDevice(id){ const l=(window._links||[]).find(x=>x.id===id)||{}; $("#etId").value=id; $("#etLabel").value=l.peer_label||""; $("#etType").innerHTML=typeOptions(l.peer_type||"other"); $("#etDesc").value=l.description||""; $("#editModal").classList.add("show"); }
 $("#etCancel").onclick=()=>$("#editModal").classList.remove("show");
-$("#etSave").onclick=async()=>{ const id=$("#etId").value; const r=await api("POST","/api/tunnel/meta",{id,label:$("#etLabel").value.trim(),node_type:$("#etType").value,description:$("#etDesc").value.trim()}); $("#editModal").classList.remove("show"); if(r.error)info("Edit tunnel",r.error); tick(); }
-window.editTunnel=editTunnel;
+$("#etSave").onclick=async()=>{ const id=$("#etId").value; const r=await api("POST","/api/tunnel/meta",{id,label:$("#etLabel").value.trim(),node_type:$("#etType").value,description:$("#etDesc").value.trim()}); $("#editModal").classList.remove("show"); if(r.error)info("Edit device",r.error); tick(); }
+window.editDevice=editDevice;
 
 // ── add device ──
 async function fillTenantSelect(sel){ const ts=await api("GET","/api/tenants"); sel.innerHTML = ts.length ? ts.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}${t.description?" — "+esc(t.description):""}</option>`).join("") : `<option value="">— no tenants yet: create one in Manage first —</option>`; }
@@ -330,10 +392,7 @@ async function loadManage(){
     <td>${esc(u.description)||'<span style="color:var(--off)">—</span>'}</td>
     <td style="text-align:right"><button class="btn sm" onclick="setPw('${esc(u.name)}')">set pw</button>
     <button class="btn sm danger" onclick="delUser('${esc(u.name)}')">delete</button></td></tr>`).join("")||`<tr><td colspan=5 style="color:var(--off)">No access users yet.</td></tr>`;
-  const ln=(window._lastState&&window._lastState.local_node)||{name:"this-node",type:"cloud-server"};
-  $("#lnName").value=ln.name||""; $("#lnType").innerHTML=typeOptions(ln.type||"cloud-server");
 }
-$("#lnSave").onclick=async()=>{ const r=await api("POST","/api/settings/local-node",{name:$("#lnName").value.trim(),type:$("#lnType").value}); info("This node", r.ok?"Saved.":(r.error||"Failed.")); tick(); };
 $("#ntCreate").onclick=async()=>{ const name=$("#ntName").value.trim(), description=$("#ntDesc").value.trim();
   if(!name) return; const r=await api("POST","/api/tenants",{name,description});
   if(r.error) info("Create tenant failed",r.error); else { $("#ntName").value="";$("#ntDesc").value=""; loadManage(); tick(); } };
@@ -370,9 +429,9 @@ async function tick(){ try{ const r=await fetch("/api/state",{cache:"no-store"})
 async function boot(){
   let r; try{ r=await fetch("/api/me",{cache:"no-store"}); }catch(e){ location.href="/login"; return; }
   if(!r.ok){ location.href="/login"; return; }
-  ME = await r.json(); applyRole();
+  ME = await r.json(); applyRole(); setView(VIEW);
   if(ME.brand){ document.title=ME.brand; $("#brand").innerHTML=esc(ME.brand)+'<span class="dot">.</span>'; }
-  if(!ME.brand || ME.brand==="PX Tunnel"){ $("#support").innerHTML=' · <a href="https://buymeacoffee.com/pxinnovative" target="_blank" rel="noopener" style="color:var(--dim)">\u2665 Support</a>'; }
+  if(!ME.brand || ME.brand==="PX Tunnel"){ $("#support").innerHTML=' · <a href="https://buymeacoffee.com/pxinnovative" target="_blank" rel="noopener" style="color:var(--dim)">♥ Support</a>'; }
   await loadTenantDescs();
   tick(); setInterval(tick,5000);
   if(canManage()) loadManage();
