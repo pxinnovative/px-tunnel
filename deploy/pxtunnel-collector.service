@@ -1,0 +1,19 @@
+[Unit]
+Description=PX Tunnel data-plane collector (writes /run/pxtunnel/state.json)
+Documentation=https://github.com/pxinnovative/px-tunnel
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/pxtunnel/pxtunnel.env
+# Least privilege: dedicated user + CAP_NET_ADMIN for `wg show`; headscale group for the
+# headscale CLI socket. RuntimeDirectoryPreserve keeps /run/pxtunnel/state.json between runs.
+User=pxtunnel
+Group=pxtunnel
+SupplementaryGroups=headscale
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
+RuntimeDirectory=pxtunnel
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/bin/python3 /opt/pxtunnel-ui/collector/pxtunnel_collect.py --out /run/pxtunnel/state.json
+NoNewPrivileges=yes
+ProtectHome=yes

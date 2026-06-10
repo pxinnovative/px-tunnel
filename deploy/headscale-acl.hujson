@@ -1,0 +1,23 @@
+// PX Tunnel — canonical Headscale ACL (deny-by-default tenant isolation).
+//
+// Apply on the host (headscale must run with policy.mode: database):
+//   sudo sed -i 's/^  mode: file/  mode: database/' /etc/headscale/config.yaml
+//   sudo cp deploy/headscale-acl.hujson /etc/headscale/acl.hujson
+//   sudo systemctl restart headscale
+//   sudo headscale policy set -f /etc/headscale/acl.hujson
+//   sudo headscale policy get          # verify
+//
+// Each node may reach ONLY nodes owned by the SAME Headscale user (= tenant).
+// Traffic not matched by an accept rule is denied. New tenants are isolated
+// automatically — no edit here when a tenant is created.
+//
+// RUNTIME VERIFICATION TODO: once two tenants have live nodes, confirm cross-tenant
+// traffic is actually blocked (autogroup:self is validated syntactically against
+// headscale v0.28, not yet proven at runtime). If it does not enforce, switch to the
+// enumerated form: one { "action":"accept", "src":["<tenant>@"], "dst":["<tenant>@:*"] }
+// per tenant.
+{
+  "acls": [
+    { "action": "accept", "src": ["*"], "dst": ["autogroup:self:*"] }
+  ]
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh the PX Tunnel snapshot every 15s
+
+[Timer]
+OnBootSec=10
+OnUnitActiveSec=15
+AccuracySec=2
+
+[Install]
+WantedBy=timers.target

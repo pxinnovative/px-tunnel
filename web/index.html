@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PX Tunnel</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141925; --panel2:#1b2230; --line:#222b3a;
+    --txt:#e6edf3; --dim:#8b98a9; --accent:#4da3ff;
+    --ok:#3fb950; --warn:#d29922; --off:#6e7681; --bad:#f85149; --exit:#a371f7;
+    --rawwg:#4da3ff; --nord:#a371f7; --mesh:#3fb950; --app:#6e7681;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{padding:16px 24px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel)}
+  h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
+  h1 .dot{color:var(--accent)}
+  .sub{color:var(--dim);font-size:12px}
+  .stats{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+  .stat{text-align:center}.stat b{display:block;font-size:20px}.stat span{font-size:11px;color:var(--dim)}
+  .stat.alert b{color:var(--bad)}
+  .hdr-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .uchip{font-size:12px;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 10px;white-space:nowrap}
+  main{padding:20px 24px;max-width:1080px;margin:0 auto}
+  .links{display:flex;flex-direction:column;gap:10px}
+  .tenant-hd{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.6px;color:var(--dim);margin:18px 0 9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .tenant-hd:first-child{margin-top:0}
+  .tenant-hd .tdesc{font-weight:400;text-transform:none;letter-spacing:0;color:var(--off)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;display:flex;align-items:center;gap:13px;transition:border-color .15s}
+  .card:hover{border-color:#2f3b4d}
+  .card.unexpected{border-color:var(--bad);box-shadow:0 0 0 1px rgba(248,81,73,.25) inset}
+  .sdot{width:10px;height:10px;border-radius:50%;flex:none}
+  .sdot.online{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .sdot.idle{background:var(--warn)} .sdot.offline{background:var(--off)}
+  .lyr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+    padding:3px 8px;border-radius:6px;flex:none;min-width:78px;text-align:center}
+  .lyr.raw-wg{background:rgba(77,163,255,.15);color:var(--rawwg)}
+  .lyr.nordvpn{background:rgba(163,113,247,.15);color:var(--nord)}
+  .lyr.headscale-node{background:rgba(63,185,80,.15);color:var(--mesh)}
+  .lyr.app-tailnet{background:rgba(110,118,129,.15);color:var(--app)}
+  .body{flex:1;min-width:0}
+  .route{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .route .arrow{color:var(--dim)}
+  .iface{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+    color:var(--dim);background:var(--panel2);padding:1px 6px;border-radius:4px}
+  .purpose{color:var(--dim);font-size:12.5px;margin-top:3px}
+  .purpose .edit{cursor:pointer;color:var(--off);margin-left:6px}.purpose .edit:hover{color:var(--accent)}
+  .meta{display:flex;gap:8px;align-items:center;flex:none;flex-wrap:wrap;justify-content:flex-end}
+  .badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.4px}
+  .badge.exit{background:rgba(163,113,247,.18);color:var(--exit)}
+  .badge.bad{background:rgba(248,81,73,.18);color:var(--bad)}
+  .badge.warn{background:rgba(210,153,34,.18);color:var(--warn)}
+  .badge.crit{background:rgba(248,81,73,.12);color:#ff9b94}
+  .tput{font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);text-align:right;min-width:92px}
+  .acts{display:flex;gap:5px;flex-wrap:wrap}
+  footer{padding:14px 24px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;
+    display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+  .ver{font-family:ui-monospace,monospace}.ago{margin-left:auto}
+  .empty{color:var(--dim);padding:40px;text-align:center}
+  .hintbox{padding:14px 16px;color:var(--dim);border:1px dashed var(--line);border-radius:10px;margin-bottom:12px;font-size:13px}
+  /* buttons */
+  .btn{font:inherit;font-size:12px;font-weight:600;color:var(--txt);background:var(--panel2);
+    border:1px solid var(--line);border-radius:7px;padding:6px 12px;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#06223f;border-color:var(--accent)}
+  .btn.primary:hover{opacity:.9}
+  .btn.sm{padding:3px 9px;font-size:11px}
+  .btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10;padding:20px}
+  .modal.show{display:flex}
+  .modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:640px;width:100%;max-height:88vh;overflow:auto}
+  .modal.lg .box{max-width:820px}
+  .modal h2{margin:0 0 4px;font-size:16px}
+  .modal p.hint{color:var(--dim);font-size:13px;margin:0 0 16px}
+  .cmd{font-family:ui-monospace,monospace;font-size:12px;background:var(--bg);border:1px solid var(--line);
+    border-radius:8px;padding:12px;word-break:break-all;color:var(--ok);margin-bottom:14px;user-select:all}
+  .modal .row{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+  label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px;font-weight:600}
+  input,select,textarea{width:100%;font:inherit;font-size:13px;background:var(--bg);color:var(--txt);
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .tab{padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;color:var(--dim);border-bottom:2px solid transparent}
+  .tab.on{color:var(--txt);border-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .pill{font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;margin:1px;display:inline-block}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tchecks{display:flex;flex-wrap:wrap;gap:6px;max-height:104px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg)}
+  .tcheck{display:flex;align-items:center;gap:5px;font-size:13px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;cursor:pointer;font-weight:500}
+  .tcheck input{width:auto;margin:0;cursor:pointer}
+  .tcheck:hover{border-color:var(--accent)}
+  @media(max-width:640px){.card{flex-wrap:wrap}.meta{width:100%;justify-content:flex-start}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1 id="brand">PX&nbsp;Tunnel<span class="dot">.</span></h1><div class="sub" id="host">—</div></div>
+  <div class="stats" id="stats"></div>
+  <div class="hdr-btns">
+    <span class="uchip" id="uchip" title="Signed-in account"></span>
+    <button class="btn" id="pwBtn" title="Change your own password">Password</button>
+    <button class="btn" id="manageBtn" title="Manage tenants, users and per-tenant tunnels">⚙ Manage</button>
+    <button class="btn primary" id="addBtn" title="Generate a join command for a device in a tenant">+ Add device</button>
+    <button class="btn" id="logoutBtn" title="Sign out">Logout</button>
+  </div>
+</header>
+<main>
+  <div style="margin-bottom:14px"><label style="display:inline-block;margin:0 8px 0 0;font-size:12px">View tenant:</label><select id="tenantFilter" style="width:auto;display:inline-block;min-width:180px"><option value="all">All tenants</option></select></div>
+  <div class="links" id="links"><div class="empty">Loading tunnels…</div></div>
+</main>
+<footer><span id="versions"></span><span id="support"></span><span class="ago" id="ago"></span></footer>
+
+<!-- generic info / command modal -->
+<div class="modal" id="modal"><div class="box">
+  <h2 id="mTitle">Info</h2><p class="hint" id="mSub"></p>
+  <div class="cmd" id="mCmd" style="display:none"></div>
+  <div class="row"><button class="btn" id="mCopy" style="display:none">Copy</button><button class="btn primary" id="mClose">Done</button></div>
+</div></div>
+
+<!-- add device modal -->
+<div class="modal" id="addModal"><div class="box">
+  <h2>Add device to a tenant</h2>
+  <p class="hint">A "device" = any computer / router / server you want inside a workspace. Pick the
+    workspace, generate the command, then paste it into <b>that device's terminal</b> to enroll it into
+    the mesh. It will then appear here under that tenant.</p>
+  <label>Tenant (workspace)</label><select id="addTenant"></select>
+  <div class="grid2">
+    <div><label>Device name</label><input id="addName" placeholder="e.g. office-router" autocapitalize="off"></div>
+    <div><label>Device type</label><select id="addType"></select></div>
+  </div>
+  <label><input type="checkbox" id="addReusable" style="width:auto"> reusable key (multiple devices)</label>
+  <div class="row"><button class="btn" id="addCancel">Cancel</button><button class="btn primary" id="addGo">Generate join command</button></div>
+</div></div>
+
+<!-- edit tunnel modal -->
+<div class="modal" id="editModal"><div class="box">
+  <h2>Edit tunnel</h2>
+  <p class="hint">Name and type the far end of this tunnel — sets the icon and label on the card.</p>
+  <div class="grid2">
+    <div><label>Peer name</label><input id="etLabel" placeholder="e.g. office-server" autocapitalize="off"></div>
+    <div><label>Peer type</label><select id="etType"></select></div>
+  </div>
+  <label>Description</label><input id="etDesc" placeholder="what this tunnel is for">
+  <input type="hidden" id="etId">
+  <div class="row"><button class="btn" id="etCancel">Cancel</button><button class="btn primary" id="etSave">Save</button></div>
+</div></div>
+
+<!-- manage (admin) modal -->
+<div class="modal lg" id="manageModal"><div class="box">
+  <h2>Manage</h2><p class="hint">Tenants = isolated client workspaces (Headscale users). Access users = who may view which tenant.</p>
+  <div class="tabs"><div class="tab on" data-tab="tenants">Tenants</div><div class="tab" data-tab="users">Access users</div></div>
+  <div id="tabTenants">
+    <table><thead><tr><th>Tenant</th><th>Nodes</th><th>Description</th><th></th></tr></thead><tbody id="tenantRows"></tbody></table>
+    <div class="grid2" style="margin-top:14px">
+      <div><label>New tenant name</label><input id="ntName" placeholder="acme-corp"></div>
+      <div><label>Description</label><input id="ntDesc" placeholder="e.g. isolated workspace for a client or partner"></div>
+    </div>
+    <div class="row"><button class="btn primary" id="ntCreate">+ Create tenant</button></div>
+  </div>
+  <div id="tabUsers" style="display:none">
+    <table><thead><tr><th>User</th><th>Role</th><th>Tenants</th><th>Description</th><th></th></tr></thead><tbody id="userRows"></tbody></table>
+    <div class="grid2" style="margin-top:14px">
+      <div><label>User name</label><input id="nuName" placeholder="e.g. jane-doe"></div>
+      <div><label>Role</label><select id="nuRole">
+        <option value="viewer">viewer — only SEES its assigned tenants</option>
+        <option value="admin">admin — manages ONLY its assigned tenants</option>
+        <option value="superadmin">superadmin — sees &amp; edits ALL tenants (you)</option>
+      </select></div>
+      <div><label>Assigned tenants (viewer / admin) — tick one or more</label><div id="nuTenants" class="tchecks"></div></div>
+      <div><label>Description</label><input id="nuDesc" placeholder="e.g. what this login is for"></div>
+      <div><label>Initial password (min 8 chars)</label><input id="nuPass" type="password" autocomplete="new-password" placeholder="set a login password"></div>
+    </div>
+    <div class="row"><button class="btn primary" id="nuCreate">+ Add user</button></div>
+  </div>
+  <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:8px">
+    <label>This node — the near end shown on every tunnel</label>
+    <div class="grid2">
+      <div><input id="lnName" placeholder="e.g. gateway" autocapitalize="off"></div>
+      <div><select id="lnType"></select></div>
+    </div>
+    <div class="row"><button class="btn" id="lnSave">Save this node</button></div>
+  </div>
+  <div class="row" style="border-top:1px solid var(--line);padding-top:12px"><button class="btn" id="manageClose">Close</button></div>
+</div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (m,p,d) => { const r = await fetch(p,{method:m,headers:{"Content-Type":"application/json"},body:d?JSON.stringify(d):undefined,cache:"no-store"});
+  if(r.status===401){ location.href="/login"; return {}; } try{return await r.json()}catch(e){return {}} };
+// ── session / role (server enforces RBAC; this only hides controls) ──
+let ME = null;
+const INFRA = () => (ME && ME.infra_tenant) || "system";
+const canManage = () => ME && ME.role === "superadmin";          // create/delete tenants + manage users
+const canAct = () => ME && (ME.role === "superadmin" || ME.role === "admin"); // add device, node actions, descriptions
+function applyRole(){
+  $("#uchip").textContent = ME ? `${ME.username} · ${ME.role}` : "";
+  $("#manageBtn").style.display = canManage() ? "" : "none";
+  $("#addBtn").style.display = canAct() ? "" : "none";
+}
+const esc = s => (s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtBytes = n => n==null?"":n>1e9?(n/1e9).toFixed(1)+" GB":n>1e6?(n/1e6).toFixed(1)+" MB":n>1e3?(n/1e3).toFixed(0)+" KB":n+" B";
+const ago = s => s==null?"—":s<60?Math.round(s)+"s":s<3600?Math.round(s/60)+"m":Math.round(s/3600)+"h";
+const endpointLabel = l => { const b=l.endpoint_b||{}; return b.label||b.public_endpoint||b.addr||(b.pubkey_fp?b.pubkey_fp+"…":"peer"); };
+// ── node typing (icons + dropdown options) ──
+const NODE_ICON={server:"🖥️","cloud-server":"☁️",computer:"💻",router:"📡",phone:"📱","vpn-exit":"🛡️",mesh:"🕸️",other:"🔌"};
+const icon=t=>NODE_ICON[t]||NODE_ICON.other;
+const typeOptions=sel=>((ME&&ME.node_types)||Object.keys(NODE_ICON)).map(t=>`<option value="${t}"${t===sel?" selected":""}>${icon(t)} ${t}</option>`).join("");
+
+// ── modals ──
+function info(title,sub,cmd){ $("#mTitle").textContent=title; $("#mSub").textContent=sub||""; const c=$("#mCmd"),cp=$("#mCopy");
+  if(cmd){c.style.display="block";c.textContent=cmd;cp.style.display="inline-block";}else{c.style.display="none";cp.style.display="none";}
+  $("#modal").classList.add("show"); }
+$("#mClose").onclick=()=>$("#modal").classList.remove("show");
+$("#mCopy").onclick=()=>navigator.clipboard&&navigator.clipboard.writeText($("#mCmd").textContent);
+
+// ── tunnels view ──
+function render(d){
+  $("#host").textContent = d.host + " · " + d.links.length + " tunnels";
+  const p=d.posture||{}; const alerts=(p.unexpected||[]).length+(p.stale||[]).length;
+  $("#stats").innerHTML = `<div class="stat"><b>${p.online||0}/${p.total||0}</b><span>online</span></div>
+    <div class="stat"><b>${(p.tenants||[]).length}</b><span>tenants</span></div>
+    <div class="stat"><b>${(p.exit_nodes||[]).length}</b><span>exit nodes</span></div>
+    <div class="stat ${alerts?'alert':''}"><b>${alerts}</b><span>alerts</span></div>`;
+  window._lastState=d;
+  const known=window._tdesc?Object.keys(window._tdesc):[]; const tns=[...new Set([...((d.posture&&d.posture.tenants)||[]),...known])].sort((a,b)=>a===INFRA()?-1:(b===INFRA()?1:a.localeCompare(b))); const fsel=$("#tenantFilter"); const fcur=fsel.value||"all";
+  fsel.innerHTML=`<option value="all">All tenants</option>`+tns.map(t=>`<option value="${esc(t)}">${t===INFRA()?esc(t)+" · infrastructure":esc(t)}</option>`).join("");
+  fsel.value=(fcur==="all"||tns.includes(fcur))?fcur:"all";
+  const order={"raw-wg":0,"headscale-node":1,"nordvpn":2,"app-tailnet":3};
+  let links=[...d.links].sort((a,b)=>{const ta=a.tenant||INFRA(),tb=b.tenant||INFRA();
+    if(ta!==tb)return ta===INFRA()?-1:(tb===INFRA()?1:ta.localeCompare(tb));return (order[a.layer]??9)-(order[b.layer]??9);});
+  if(fsel.value!=="all") links=links.filter(l=>(l.tenant||INFRA())===fsel.value);
+  window._links=links;
+  let lastT=null;
+  const hasNodes=links.some(l=>l.layer==="headscale-node");
+  const view=fsel.value; let emptyHint="";
+  if(!hasNodes){
+    if(view!=="all" && view!==INFRA()){
+      emptyHint=`<div class="hintbox">No devices in <b>${esc(view)}</b> yet — use <b>+ Add device</b> to generate a join command and enroll one. It will appear here with exit-node / rename / approve / disconnect / remove actions.</div>`;
+    } else if(view==="all" || view===INFRA()){
+      emptyHint=`<div class="hintbox">No tenant devices enrolled yet. The tunnels shown are system infrastructure — use <b>+ Add device</b> to enroll a Mac / router / server into a tenant.</div>`;
+    }
+  }
+  $("#links").innerHTML = emptyHint + links.map(l=>{
+    const sec=l.security||{flags:[]}, flags=sec.flags||[], badges=[];
+    if(l.exit_node)badges.push(`<span class="badge exit">exit</span>`);
+    if(l.criticality==="critical")badges.push(`<span class="badge crit">critical</span>`);
+    if(flags.includes("unexpected_peer"))badges.push(`<span class="badge bad">unexpected</span>`);
+    if(flags.includes("stale_handshake"))badges.push(`<span class="badge warn">stale</span>`);
+    const rx=l.throughput&&l.throughput.rx_bytes, tx=l.throughput&&l.throughput.tx_bytes;
+    const tput=(rx!=null||tx!=null)?`↓${fmtBytes(rx)} ↑${fmtBytes(tx)}`:"";
+    const hs=l.handshake_age_s!=null?`handshake ${ago(l.handshake_age_s)}`:"";
+    const nid=(l.id||"").split(":").pop();
+    const acts=(l.layer==="headscale-node" && canAct())?`<span class="acts">
+      ${(l.routes_available&&l.routes_available.length)?`<button class="btn sm" onclick="nodeAct('${nid}','approve')">approve</button>`:""}
+      <button class="btn sm" onclick="nodeAct('${nid}','exit-node')" title="Advertise this node as an exit node">exit-node</button>
+      <button class="btn sm" onclick="nodeRename('${nid}')">rename</button>
+      <button class="btn sm" onclick="nodeAct('${nid}','expire')">disconnect</button>
+      <button class="btn sm danger" onclick="nodeAct('${nid}','delete')">remove</button></span>`:"";
+    const t=l.tenant||INFRA(); let hd="";
+    if(t!==lastT){lastT=t; const td=(window._tdesc&&window._tdesc[t])||""; const thd=t===INFRA()?"⚙ "+esc(t)+" · infrastructure":"👥 "+esc(t); hd=`<div class="tenant-hd">${thd}${td?`<span class="tdesc">— ${esc(td)}</span>`:""}</div>`;}
+    const desc = l.description || l.purpose || "— no description —";
+    return hd + `<div class="card ${flags.includes("unexpected_peer")?"unexpected":""}">
+      <span class="sdot ${l.status}"></span>
+      <span class="lyr ${l.layer}">${l.layer.replace("-"," ")}</span>
+      <div class="body">
+        <div class="route"><span title="${esc((d.local_node||{}).type||"")}">${icon((d.local_node||{}).type)} ${esc((d.local_node||{}).name||d.host.split(".")[0])}</span> <span class="arrow">⇄</span> <span title="${esc(l.peer_type||"")}">${icon(l.peer_type)} ${esc(l.peer_label||endpointLabel(l))}</span>
+          <span class="iface">${esc(l.iface)}</span>${(l.subnet||[]).slice(0,2).map(s=>`<span class="iface">${esc(s)}</span>`).join("")}</div>
+        <div class="purpose">${esc(desc)}${canAct()?`<span class="edit" onclick="editTunnel('${l.id}')" title="Edit name, type &amp; description">✎</span>`:""}</div>
+      </div>
+      <div class="meta">${badges.join("")}${acts}<span class="tput">${tput}<br><span style="color:var(--off)">${hs}</span></span></div>
+    </div>`;
+  }).join("") || `<div class="empty">No tunnels.</div>`;
+  $("#versions").innerHTML=`<span class="ver">${esc((ME&&ME.brand)||"PX Tunnel")} <b>v${esc(d.app_version||"?")}</b></span> · `+(d.versions||[]).map(v=>`<span class="ver">${esc(v.component)} <b>${esc((v.current||"").split(" ")[0])}</b></span>`).join(" · ");
+  $("#ago").textContent="snapshot "+ago(Math.max(0,Math.round(Date.now()/1000-d.generated_at)))+" ago";
+}
+
+// ── per-tunnel actions ──
+async function nodeAct(id,action){
+  if(action==="delete" && !confirm("Remove node "+id+" from the mesh?")) return;
+  const r=await api("POST","/api/node/"+id+"/"+action,{}); if(r.error) info("Action failed",r.error+" "+(r.detail||"")); tick();
+}
+async function nodeRename(id){ const n=prompt("New node name:"); if(!n) return; const r=await api("POST","/api/node/"+id+"/rename",{name:n}); if(r.error)info("Rename failed",r.error+" "+(r.detail||"")); tick(); }
+async function describe(id){ const l=(window._links||[]).find(x=>x.id===id)||{}; const cur=l.description||l.purpose||""; const v=prompt("Edit this tunnel's description (leave empty to clear it):",cur); if(v==null) return; await api("POST","/api/tunnel/describe",{id:id,description:v}); tick(); }
+window.nodeAct=nodeAct; window.nodeRename=nodeRename; window.describe=describe;
+// ── edit tunnel (peer name + type + description) ──
+function editTunnel(id){ const l=(window._links||[]).find(x=>x.id===id)||{}; $("#etId").value=id; $("#etLabel").value=l.peer_label||""; $("#etType").innerHTML=typeOptions(l.peer_type||"other"); $("#etDesc").value=l.description||""; $("#editModal").classList.add("show"); }
+$("#etCancel").onclick=()=>$("#editModal").classList.remove("show");
+$("#etSave").onclick=async()=>{ const id=$("#etId").value; const r=await api("POST","/api/tunnel/meta",{id,label:$("#etLabel").value.trim(),node_type:$("#etType").value,description:$("#etDesc").value.trim()}); $("#editModal").classList.remove("show"); if(r.error)info("Edit tunnel",r.error); tick(); }
+window.editTunnel=editTunnel;
+
+// ── add device ──
+async function fillTenantSelect(sel){ const ts=await api("GET","/api/tenants"); sel.innerHTML = ts.length ? ts.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}${t.description?" — "+esc(t.description):""}</option>`).join("") : `<option value="">— no tenants yet: create one in Manage first —</option>`; }
+$("#addBtn").onclick=async()=>{ await fillTenantSelect($("#addTenant")); $("#addType").innerHTML=typeOptions("computer"); $("#addName").value=""; $("#addModal").classList.add("show"); };
+$("#addCancel").onclick=()=>$("#addModal").classList.remove("show");
+$("#addGo").onclick=async()=>{
+  const tenant=$("#addTenant").value, reusable=$("#addReusable").checked, name=$("#addName").value.trim(), node_type=$("#addType").value;
+  $("#addModal").classList.remove("show");
+  const r=await api("POST","/api/device/add",{tenant,reusable,name,node_type});
+  if(r.login_command) info(`Join command for "${tenant}"`,`Copy this and run it in the terminal of the ${node_type} you want to enroll into "${tenant}". It joins the mesh and shows up here under that tenant${name?` as "${name}"`:""}. Key valid ${r.expires_in} — generate a new one if it expires.`,r.login_command);
+  else info("Add device","Error: "+(r.error||JSON.stringify(r)));
+};
+
+// ── manage (admin) ──
+const mModal=$("#manageModal");
+$("#manageBtn").onclick=()=>{ loadManage(); mModal.classList.add("show"); };
+$("#manageClose").onclick=()=>mModal.classList.remove("show");
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on")); t.classList.add("on");
+  $("#tabTenants").style.display=t.dataset.tab==="tenants"?"block":"none";
+  $("#tabUsers").style.display=t.dataset.tab==="users"?"block":"none";
+});
+async function loadManage(){
+  const tsr=await api("GET","/api/tenants"); const ts=Array.isArray(tsr)?tsr:[]; window._tdesc={}; ts.forEach(t=>window._tdesc[t.name]=t.description);
+  $("#tenantRows").innerHTML=ts.map(t=>`<tr><td><b>${esc(t.name)}</b></td><td>${t.nodes}</td>
+    <td>${esc(t.description)||'<span style="color:var(--off)">—</span>'}</td>
+    <td style="text-align:right"><button class="btn sm" onclick="editTenantDesc('${esc(t.name)}')">✎ desc</button>
+    <button class="btn sm danger" onclick="delTenant('${esc(t.name)}')">delete</button></td></tr>`).join("")||`<tr><td colspan=4 style="color:var(--off)">No tenants yet.</td></tr>`;
+  const sel=$("#nuTenants"); sel.innerHTML=ts.length?ts.map(t=>`<label class="tcheck"><input type="checkbox" value="${esc(t.name)}"> ${esc(t.name)}</label>`).join(""):'<span style="color:var(--off)">no tenants yet — create one first</span>';
+  const us=await api("GET","/api/access-users"); const ul=Array.isArray(us)?us:[];
+  $("#userRows").innerHTML=ul.map(u=>`<tr><td><b>${esc(u.name)}</b>${u.has_password?"":' <span style="color:var(--warn)" title="No password set — cannot sign in yet">(no login)</span>'}</td><td>${esc(u.role)}</td>
+    <td>${u.role==="superadmin"?'<span class="pill">all</span>':(u.tenants||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</td>
+    <td>${esc(u.description)||'<span style="color:var(--off)">—</span>'}</td>
+    <td style="text-align:right"><button class="btn sm" onclick="setPw('${esc(u.name)}')">set pw</button>
+    <button class="btn sm danger" onclick="delUser('${esc(u.name)}')">delete</button></td></tr>`).join("")||`<tr><td colspan=5 style="color:var(--off)">No access users yet.</td></tr>`;
+  const ln=(window._lastState&&window._lastState.local_node)||{name:"this-node",type:"cloud-server"};
+  $("#lnName").value=ln.name||""; $("#lnType").innerHTML=typeOptions(ln.type||"cloud-server");
+}
+$("#lnSave").onclick=async()=>{ const r=await api("POST","/api/settings/local-node",{name:$("#lnName").value.trim(),type:$("#lnType").value}); info("This node", r.ok?"Saved.":(r.error||"Failed.")); tick(); };
+$("#ntCreate").onclick=async()=>{ const name=$("#ntName").value.trim(), description=$("#ntDesc").value.trim();
+  if(!name) return; const r=await api("POST","/api/tenants",{name,description});
+  if(r.error) info("Create tenant failed",r.error); else { $("#ntName").value="";$("#ntDesc").value=""; loadManage(); tick(); } };
+$("#nuCreate").onclick=async()=>{ const name=$("#nuName").value.trim(), role=$("#nuRole").value, description=$("#nuDesc").value.trim(), password=$("#nuPass").value;
+  const tenants=[...document.querySelectorAll("#nuTenants input:checked")].map(c=>c.value);
+  if(!name) return; if(password && password.length<8){ info("Add user","Password too short — min 8 characters."); return; }
+  const r=await api("POST","/api/access-users",{name,role,description,tenants,password});
+  if(r.error) info("Add user failed",r.error); else { $("#nuName").value="";$("#nuDesc").value="";$("#nuPass").value=""; loadManage(); } };
+async function setPw(n){ const np=prompt(`New password for "${n}" (min 8 chars):`)||""; if(np.length<8){ if(np) info("Set password","Too short — min 8 characters."); return; }
+  const r=await api("POST","/api/access-users/"+encodeURIComponent(n)+"/password",{password:np}); info("Set password", r.ok?`Password set for ${n}. They must sign in again.`:(r.error||"Failed.")); loadManage(); }
+window.setPw=setPw;
+async function delTenant(n){ if(!confirm(`Delete tenant "${n}" and its mesh user? (nodes must be removed first)`)) return; const r=await api("DELETE","/api/tenants/"+n); if(r.error)info("Delete failed",r.error+" "+(r.detail||"")); loadManage(); tick(); }
+async function delUser(n){ if(!confirm(`Delete access user "${n}"?`)) return; await api("DELETE","/api/access-users/"+n); loadManage(); }
+async function editTenantDesc(n){ const cur=(window._tdesc&&window._tdesc[n])||""; const d=prompt("Edit tenant description (leave empty to clear it):",cur); if(d==null) return; await api("POST","/api/tenants/describe",{name:n,description:d}); loadManage(); tick(); }
+window.delTenant=delTenant; window.delUser=delUser; window.editTenantDesc=editTenantDesc;
+$("#tenantFilter").onchange=()=>{ if(window._lastState) render(window._lastState); };
+
+// ── account actions ──
+$("#logoutBtn").onclick=async()=>{ await api("POST","/api/logout"); location.href="/login"; };
+$("#pwBtn").onclick=async()=>{
+  const isSuper = ME && ME.role==="superadmin";
+  const cur = isSuper ? "" : (prompt("Your current password:")||"");
+  if(!isSuper && !cur) return;
+  const np = prompt("New password (min 8 chars):")||"";
+  if(np.length<8){ if(np) info("Password","Too short — min 8 characters."); return; }
+  const r=await api("POST","/api/access-users/"+encodeURIComponent(ME.username)+"/password",{password:np,current_password:cur});
+  info("Password", r.ok?"Password updated.":(r.error||"Failed."));
+};
+
+// ── poll ──
+async function tick(){ try{ const r=await fetch("/api/state",{cache:"no-store"}); if(r.status===401){ location.href="/login"; return; } if(r.ok) render(await r.json()); }catch(e){} }
+
+// ── boot: load session, then start ──
+async function boot(){
+  let r; try{ r=await fetch("/api/me",{cache:"no-store"}); }catch(e){ location.href="/login"; return; }
+  if(!r.ok){ location.href="/login"; return; }
+  ME = await r.json(); applyRole();
+  if(ME.brand){ document.title=ME.brand; $("#brand").innerHTML=esc(ME.brand)+'<span class="dot">.</span>'; }
+  if(!ME.brand || ME.brand==="PX Tunnel"){ $("#support").innerHTML=' · <a href="https://buymeacoffee.com/pxinnovative" target="_blank" rel="noopener" style="color:var(--dim)">\u2665 Support</a>'; }
+  await loadTenantDescs();
+  tick(); setInterval(tick,5000);
+  if(canManage()) loadManage();
+}
+async function loadTenantDescs(){ const tsr=await api("GET","/api/tenants"); const ts=Array.isArray(tsr)?tsr:[]; window._tdesc={}; ts.forEach(t=>window._tdesc[t.name]=t.description); }
+boot();
+</script>
+</body>
+</html>

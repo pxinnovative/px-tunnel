@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PX Tunnel — Sign in</title>
+<style>
+  :root{--bg:#0b0e14;--panel:#141925;--line:#222b3a;--txt:#e6edf3;--dim:#8b98a9;
+    --accent:#4da3ff;--bad:#f85149}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);color:var(--txt);padding:20px;
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:30px 28px;max-width:360px;width:100%}
+  h1{font-size:22px;margin:0 0 2px;font-weight:650;letter-spacing:.2px}
+  h1 .dot{color:var(--accent)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 22px}
+  label{display:block;font-size:12px;color:var(--dim);margin:12px 0 5px;font-weight:600}
+  input{width:100%;font:inherit;font-size:14px;background:var(--bg);color:var(--txt);
+    border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+  input:focus{outline:none;border-color:var(--accent)}
+  button{width:100%;margin-top:20px;font:inherit;font-size:14px;font-weight:650;
+    color:#06223f;background:var(--accent);border:none;border-radius:9px;padding:11px;cursor:pointer}
+  button:hover{opacity:.92}
+  button:disabled{opacity:.5;cursor:default}
+  .err{display:none;margin-top:14px;color:var(--bad);font-size:13px;text-align:center}
+  .err.show{display:block}
+  footer{margin-top:22px;color:var(--dim);font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<form class="box" id="form">
+  <h1 id="brand">PX&nbsp;Tunnel<span class="dot">.</span></h1>
+  <p class="sub">Sign in to the mesh control dashboard.</p>
+  <label for="u">Username</label>
+  <input id="u" name="username" autocomplete="username" autocapitalize="off" autofocus required>
+  <label for="p">Password</label>
+  <input id="p" name="password" type="password" autocomplete="current-password" required>
+  <button id="go" type="submit">Sign in</button>
+  <div class="err" id="err"></div>
+  <footer>Self-hosted Headscale mesh · access is private</footer>
+</form>
+<script>
+const $ = s => document.querySelector(s);
+const escB = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+fetch("/api/health").then(r=>r.json()).then(d=>{ if(d.brand){ document.title=d.brand+" — Sign in"; $("#brand").innerHTML=escB(d.brand)+'<span class="dot">.</span>'; }}).catch(()=>{});
+$("#form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("#err"); err.classList.remove("show");
+  const go = $("#go"); go.disabled = true;
+  try {
+    const r = await fetch("/api/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({username: $("#u").value.trim(), password: $("#p").value}),
+    });
+    if (r.ok) { location.href = "/"; return; }
+    const d = await r.json().catch(() => ({}));
+    err.textContent = d.error || (r.status === 429 ? "Too many attempts — wait a minute." : "Sign in failed.");
+    err.classList.add("show");
+  } catch (_e) {
+    err.textContent = "Network error — is the dashboard reachable?";
+    err.classList.add("show");
+  } finally {
+    go.disabled = false;
+    $("#p").value = "";
+  }
+});
+</script>
+</body>
+</html>

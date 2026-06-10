@@ -1,0 +1,26 @@
+[Unit]
+Description=PX Tunnel dashboard (admin API + web UI, loopback only)
+Documentation=https://github.com/pxinnovative/px-tunnel
+After=network.target pxtunnel-collector.service
+
+[Service]
+# Least privilege: dedicated non-root user; headscale group for the headscale CLI socket.
+# Binds loopback only; front it with a TLS reverse proxy for remote access.
+User=pxtunnel
+Group=pxtunnel
+SupplementaryGroups=headscale
+EnvironmentFile=-/etc/pxtunnel/pxtunnel.env
+ExecStart=/usr/bin/python3 /opt/pxtunnel-ui/api/pxtunnel_api.py
+Environment=PXTUNNEL_BIND=127.0.0.1:8807
+# Trust the collector timer (15s) for fresh snapshots; the api runs without CAP_NET_ADMIN
+# so it must NOT self-run the collector (its `wg show` would fail and blank the data).
+Environment=PXTUNNEL_MAX_AGE=600
+RuntimeDirectory=pxtunnel
+RuntimeDirectoryPreserve=yes
+Restart=always
+RestartSec=2
+NoNewPrivileges=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
