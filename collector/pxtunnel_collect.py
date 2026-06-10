@@ -50,6 +50,15 @@ def fp(pubkey):
     return (pubkey or "")[:8] if pubkey and pubkey != "(none)" else None
 
 
+def _keyfp(key):
+    """Public node-key fingerprint for the detail view: strips the 'nodekey:' prefix and keeps the
+    first 16 hex chars. Node keys are PUBLIC (safe to show); we still never emit the full value."""
+    if not key:
+        return None
+    key = key.split(":", 1)[-1]
+    return (key[:16] + "…") if len(key) > 16 else key
+
+
 def parse_wg_dump():
     """`wg show all dump` -> raw-wg / nordvpn Links (non-Headscale system tunnels)."""
     rc, out, _ = run(["wg", "show", "all", "dump"])
@@ -121,6 +130,21 @@ def parse_headscale_nodes():
             "status": "online" if n.get("online") else "offline",
             "last_seen": n.get("last_seen"),
             "tags": n.get("forced_tags") or n.get("tags") or [],
+            "ips": ips,  # full mesh-address list (the list/card view shows only the first)
+            # Phase B device-detail fields. All optional: headscale's `nodes list -o json` shape
+            # varies by version (OS/client version live in Hostinfo, often absent) — read defensively.
+            "node": {
+                "created_at": n.get("created_at"),
+                "expiry": n.get("expiry"),
+                "register_method": n.get("register_method"),
+                "node_key_fp": _keyfp(n.get("node_key")),
+                "given_name": n.get("given_name"),
+                "hostname": n.get("name"),
+                "valid_tags": n.get("valid_tags") or [],
+                "invalid_tags": n.get("invalid_tags") or [],
+                "os": (n.get("hostinfo") or {}).get("os") or n.get("os"),
+                "client_version": (n.get("hostinfo") or {}).get("ipn_version") or n.get("client_version"),
+            },
         })
     return res
 

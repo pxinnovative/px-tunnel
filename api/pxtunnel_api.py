@@ -52,7 +52,7 @@ BRAND = os.environ.get("PXTUNNEL_BRAND", "PX Tunnel")
 # deleted or granted to non-superadmins. Rename via PXTUNNEL_INFRA_TENANT.
 INFRA_TENANT = os.environ.get("PXTUNNEL_INFRA_TENANT", "system")
 
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.2.0"
 # \Z (not $) anchors the very end of string — $ also matches before a trailing newline.
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,30}\Z")
 RESERVED_TENANTS = {INFRA_TENANT, "system", "default"}

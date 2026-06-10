@@ -28,7 +28,11 @@ _state = os.path.join(_tmp, "state.json")
 with open(_state, "w") as fh:
     json.dump({"host": "testhost", "generated_at": 0, "links": [
         {"id": "headscale-node:1", "layer": "headscale-node", "tenant": "acme",
-         "online": True, "status": "online", "expected": True, "security": {"flags": []}},
+         "online": True, "status": "online", "expected": True, "security": {"flags": []},
+         "ips": ["203.0.113.5"],  # RFC 5737 TEST-NET-3 (synthetic; never a real mesh address)
+         "node": {"created_at": "2026-01-01T00:00:00Z", "expiry": "0001-01-01T00:00:00Z",
+                  "register_method": "REGISTER_METHOD_AUTHKEY",
+                  "node_key_fp": "0123456789abcdef…", "valid_tags": ["tag:test"]}},
         {"id": "raw-wg:wg0:abcd1234", "layer": "raw-wg", "tenant": "system",
          "online": True, "status": "online", "expected": True, "security": {"flags": []}},
     ], "posture": {}, "versions": []}, fh)
@@ -110,6 +114,11 @@ try:
     _st = call("GET", "/api/state", jar=owner)[1]
     check("state carries local_node", isinstance(_st.get("local_node"), dict) and bool(_st["local_node"].get("name")))
     check("links carry peer_type/label", all(l.get("peer_type") and l.get("peer_label") for l in _st.get("links", [])))
+    _det = [l for l in _st.get("links", []) if l["id"] == "headscale-node:1"]
+    check("device-detail fields pass through (Phase B)",
+          bool(_det) and isinstance(_det[0].get("node"), dict)
+          and _det[0]["node"].get("register_method") == "REGISTER_METHOD_AUTHKEY"
+          and _det[0].get("ips") == ["203.0.113.5"])
     check("me lists node_types", isinstance(call("GET", "/api/me", jar=owner)[1].get("node_types"), list))
     check("set tunnel meta", call("POST", "/api/tunnel/meta",
           {"id": "headscale-node:1", "node_type": "router", "label": "gateway-1"}, jar=owner)[0] == 200)

@@ -43,6 +43,11 @@
   .dcard .nm{font-weight:650;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dcard .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0}
   .dcard .ft{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .dvname{cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-width:0}
+  .dvname:hover b,.dvname:hover .nm{color:var(--accent)}
+  #dvBody table{margin-bottom:4px}
+  #dvBody th{width:160px;color:var(--dim);font-weight:600;white-space:nowrap;vertical-align:top}
+  #dvBody td{word-break:break-word}
   .sdot{width:10px;height:10px;border-radius:50%;flex:none}
   .sdot.online{background:var(--ok);box-shadow:0 0 8px var(--ok)}
   .sdot.idle{background:var(--warn)} .sdot.offline{background:var(--off)}
@@ -182,6 +187,14 @@
   <div class="row"><button class="btn" id="etCancel">Cancel</button><button class="btn primary" id="etSave">Save</button></div>
 </div></div>
 
+<!-- device detail modal -->
+<div class="modal lg" id="detailModal"><div class="box">
+  <h2 id="dvTitle">Device</h2>
+  <p class="hint" id="dvSub"></p>
+  <div id="dvBody"></div>
+  <div class="row"><span id="dvActs" style="margin-right:auto;display:flex;gap:5px;flex-wrap:wrap"></span><button class="btn primary" id="dvClose">Close</button></div>
+</div></div>
+
 <!-- manage (admin) modal -->
 <div class="modal lg" id="manageModal"><div class="box">
   <h2>Manage</h2><p class="hint">Tenants = isolated client workspaces (Headscale users). Access users = who may view which tenant.</p>
@@ -271,7 +284,7 @@ function devRow(l){ const f=(l.security||{}).flags||[];
   return `<div class="card ${f.includes("unexpected_peer")?"unexpected":""}">
     <span class="sdot ${esc(l.status||"offline")}"></span>
     <div class="body">
-      <div class="route"><span title="${esc(l.peer_type||"")}">${icon(l.peer_type)}</span> <b>${esc(l.peer_label||endpointLabel(l))}</b> ${tchip(l.tenant||INFRA())} ${chips(l)}</div>
+      <div class="route"><span class="dvname" onclick="deviceDetail('${esc(l.id)}')" title="View device details"><span title="${esc(l.peer_type||"")}">${icon(l.peer_type)}</span> <b>${esc(l.peer_label||endpointLabel(l))}</b></span> ${tchip(l.tenant||INFRA())} ${chips(l)}</div>
       ${descLine(l)}
     </div>
     <div class="meta">${badges(l)}${devActs(l)}<span class="seen">${lastSeen(l)}</span></div>
@@ -279,7 +292,7 @@ function devRow(l){ const f=(l.security||{}).flags||[];
 
 function devCard(l){ const f=(l.security||{}).flags||[];
   return `<div class="dcard ${f.includes("unexpected_peer")?"unexpected":""}">
-    <div class="hd"><span class="sdot ${esc(l.status||"offline")}"></span><span title="${esc(l.peer_type||"")}">${icon(l.peer_type)}</span><span class="nm">${esc(l.peer_label||endpointLabel(l))}</span></div>
+    <div class="hd"><span class="sdot ${esc(l.status||"offline")}"></span><span class="dvname" onclick="deviceDetail('${esc(l.id)}')" title="View device details"><span title="${esc(l.peer_type||"")}">${icon(l.peer_type)}</span><span class="nm">${esc(l.peer_label||endpointLabel(l))}</span></span></div>
     <div class="chips">${tchip(l.tenant||INFRA())} ${chips(l)}</div>
     ${descLine(l)}
     <div class="ft"><span>${badges(l)}</span><span class="seen">${lastSeen(l)}</span></div>
@@ -357,6 +370,53 @@ function editDevice(id){ const l=(window._links||[]).find(x=>x.id===id)||{}; $("
 $("#etCancel").onclick=()=>$("#editModal").classList.remove("show");
 $("#etSave").onclick=async()=>{ const id=$("#etId").value; const r=await api("POST","/api/tunnel/meta",{id,label:$("#etLabel").value.trim(),node_type:$("#etType").value,description:$("#etDesc").value.trim()}); $("#editModal").classList.remove("show"); if(r.error)info("Edit device",r.error); tick(); }
 window.editDevice=editDevice;
+
+// ── device detail ──
+const fmtDate = s => { if(!s) return "—"; const t=Date.parse(s); if(!Number.isFinite(t)) return "—";
+  const d=new Date(t); if(d.getUTCFullYear()<2) return "never"; return d.toISOString().slice(0,16).replace("T"," ")+" UTC"; };
+const prettyReg = s => s? String(s).replace(/^REGISTER_METHOD_/,"").toLowerCase().replace(/_/g," ") : "—";
+const ipPill = s => `<span class="iface">${esc(s)}</span>`;
+function deviceDetail(id){
+  const l=(window._links||[]).find(x=>x.id===id);
+  if(!l){ $("#detailModal").classList.remove("show"); return; }
+  const nid=(l.id||"").split(":").pop(), nd=l.node||{};
+  const ips=(l.ips&&l.ips.length)?l.ips:[(l.endpoint_b||{}).addr].filter(Boolean);
+  const approved=l.subnet||[], awaiting=(l.routes_available||[]).filter(r=>!approved.includes(r));
+  const tags=[...(nd.valid_tags||[]).map(t=>`<span class="pill">${esc(t)}</span>`),
+              ...(nd.invalid_tags||[]).map(t=>`<span class="pill" style="color:var(--warn)" title="invalid tag">${esc(t)}</span>`)].join(" ");
+  const rows=[
+    ["Managed by", tchip(l.tenant||INFRA())],
+    ["Status", lastSeen(l)],
+    ["Type", `${icon(l.peer_type)} ${esc(l.peer_type||"other")}`],
+    ["Mesh addresses", ips.length?ips.map(ipPill).join(" "):"—"],
+    ["Subnets · approved", approved.length?approved.map(ipPill).join(" "):"—"],
+    ["Subnets · awaiting", awaiting.length?awaiting.map(s=>ipPill(s)+' <span class="badge warn">awaiting</span>').join(" "):"—"],
+    ["Exit node", l.exit_node?'<span class="badge exit">yes</span>':"no"],
+    ["OS", esc(nd.os||"—")],
+    ["Client version", esc(nd.client_version||"—")],
+    ["Created", esc(fmtDate(nd.created_at))],
+    ["Key expiry", esc(fmtDate(nd.expiry))],
+    ["Register method", esc(prettyReg(nd.register_method))],
+    ["Node key", nd.node_key_fp?ipPill(nd.node_key_fp):"—"],
+    ["Tags", tags||"—"],
+    ["Node ID", esc(nid)],
+    ["Description", esc(l.description||l.purpose||"—")],
+  ];
+  $("#dvTitle").innerHTML=`<span title="${esc(l.peer_type||"")}">${icon(l.peer_type)}</span> ${esc(l.peer_label||endpointLabel(l))}`;
+  $("#dvSub").innerHTML=`<span class="sdot ${esc(l.status||"offline")}" style="display:inline-block"></span> ${tchip(l.tenant||INFRA())}`;
+  $("#dvBody").innerHTML=`<table>${rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("")}</table>`;
+  $("#dvActs").innerHTML = canAct()?`${awaiting.length?`<button class="btn sm" onclick="dvAct('${esc(id)}','${esc(nid)}','approve')" title="Approve advertised subnet routes">approve routes</button>`:""}<button class="btn sm" onclick="dvAct('${esc(id)}','${esc(nid)}','exit-node')" title="Toggle exit-node advertisement">exit-node</button><button class="btn sm" onclick="dvRename('${esc(id)}','${esc(nid)}')">rename</button><button class="btn sm" onclick="dvEdit('${esc(id)}')">edit</button><button class="btn sm" onclick="dvAct('${esc(id)}','${esc(nid)}','expire')">disconnect</button><button class="btn sm danger" onclick="dvAct('${esc(id)}','${esc(nid)}','delete')">remove</button>`:"";
+  $("#detailModal").classList.add("show");
+}
+$("#dvClose").onclick=()=>$("#detailModal").classList.remove("show");
+window.deviceDetail=deviceDetail;
+window.dvAct=async(id,nid,action)=>{ if(action==="delete"&&!confirm("Remove node "+nid+" from the mesh?"))return;
+  const r=await api("POST","/api/node/"+nid+"/"+action,{}); if(r.error){ info("Action failed",r.error+" "+(r.detail||"")); return; }
+  await tick(); if(action==="delete"){ $("#detailModal").classList.remove("show"); } else deviceDetail(id); };
+window.dvRename=async(id,nid)=>{ const n=prompt("New node name:"); if(!n)return;
+  const r=await api("POST","/api/node/"+nid+"/rename",{name:n}); if(r.error){ info("Rename failed",r.error+" "+(r.detail||"")); return; }
+  await tick(); deviceDetail(id); };
+window.dvEdit=(id)=>{ $("#detailModal").classList.remove("show"); editDevice(id); };
 
 // ── add device ──
 async function fillTenantSelect(sel){ const ts=await api("GET","/api/tenants"); sel.innerHTML = ts.length ? ts.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}${t.description?" — "+esc(t.description):""}</option>`).join("") : `<option value="">— no tenants yet: create one in Manage first —</option>`; }
