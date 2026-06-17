@@ -160,6 +160,14 @@ try:
     check("viewer1 cannot add device (403)", call("POST", "/api/device/add",
           {"tenant": "acme"}, jar=vw)[0] == 403)
 
+    # ── access-control policy (Phase E) RBAC — needs no headscale; the role gate runs first ──
+    check("viewer1 cannot read policy (403)", call("GET", "/api/policy", jar=vw)[0] == 403)
+    check("viewer1 cannot validate policy (403)", call("POST", "/api/policy/check",
+          {"policy": "{}"}, jar=vw)[0] == 403)
+    check("viewer1 cannot apply policy (403)", call("POST", "/api/policy",
+          {"policy": "{}"}, jar=vw)[0] == 403)
+    check("unauthenticated cannot read policy (401)", call("GET", "/api/policy")[0] == 401)
+
     # ── self password change (revokes other sessions, keeps the acting one) ──
     vw2 = http.cookiejar.CookieJar()
     login(vw2, "viewer1", "viewer-pass-1")
