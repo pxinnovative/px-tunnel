@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -52,7 +53,7 @@ BRAND = os.environ.get("PXTUNNEL_BRAND", "PX Tunnel")
 # deleted or granted to non-superadmins. Rename via PXTUNNEL_INFRA_TENANT.
 INFRA_TENANT = os.environ.get("PXTUNNEL_INFRA_TENANT", "system")
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 # \Z (not $) anchors the very end of string — $ also matches before a trailing newline.
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,30}\Z")
 RESERVED_TENANTS = {INFRA_TENANT, "system", "default"}
@@ -72,6 +73,43 @@ def hs(args, timeout=10):
         return p.returncode, p.stdout, p.stderr
     except Exception as e:  # noqa: BLE001
         return 1, "", str(e)
+
+
+# Cap on a submitted policy document so a runaway paste can't exhaust memory / disk.
+MAX_POLICY_BYTES = 256 * 1024
+
+
+def hs_policy(content, apply=False):
+    """Validate (and optionally apply) a HuJSON ACL policy via the headscale CLI.
+
+    `headscale policy check`/`set` read the policy from a file, so we write the submitted
+    document to a private temp file, run the CLI against it, and always remove it. Nothing is
+    persisted by us — headscale itself owns the policy store (database mode). Returns
+    (ok: bool, detail: str). On apply=True a successful `set` implies the policy is live.
+    """
+    if not content or not content.strip():
+        return False, "empty policy"
+    if len(content.encode("utf-8")) > MAX_POLICY_BYTES:
+        return False, "policy too large"
+    fd, tmp = tempfile.mkstemp(prefix="pxtunnel-policy-", suffix=".hujson")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            fh.write(content)
+        os.chmod(tmp, 0o600)
+        # Always check first; only `set` when applying and the check passed.
+        rc, _out, err = hs(["policy", "check", "-f", tmp])
+        if rc != 0:
+            return False, (err.strip() or "policy failed validation")[:600]
+        if apply:
+            rc, _out, err = hs(["policy", "set", "-f", tmp])
+            if rc != 0:
+                return False, (err.strip() or "policy set failed")[:600]
+        return True, "applied" if apply else "valid"
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
 
 
 def hs_users():
@@ -331,6 +369,14 @@ class Handler(BaseHTTPRequestHandler):
             if not db.is_superadmin(user):
                 return self._send(403, {"error": "forbidden"})
             return self._send(200, db.list_users())
+        # access-control policy (the mesh ACL) — read; superadmin only
+        if path == "/api/policy":
+            if not db.is_superadmin(user):
+                return self._send(403, {"error": "only a superadmin can view the access policy"})
+            rc, out, err = hs(["policy", "get"])
+            if rc != 0:
+                return self._send(503, {"error": "could not read policy", "detail": err[:300]})
+            return self._send(200, {"policy": out})
         if path in ("/", "/index.html"):
             return self._serve_file(os.path.join(WEB, "index.html"), "text/html; charset=utf-8")
 
@@ -487,6 +533,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, {"error": "invalid name or type"})
             db.set_local_node(name, ntype)
             return self._send(200, {"ok": True})
+
+        # access-control policy (the mesh ACL) — validate or apply; superadmin only
+        if path in ("/api/policy", "/api/policy/check"):
+            if not db.is_superadmin(user):
+                return self._send(403, {"error": "only a superadmin can change the access policy"})
+            apply = path == "/api/policy"
+            ok, detail = hs_policy(body.get("policy", ""), apply=apply)
+            if not ok:
+                return self._send(400, {"error": "invalid policy", "detail": detail})
+            return self._send(200, {"ok": True, "detail": detail})
 
         # node actions: /api/node/<id>/<action>
         m = re.match(r"^/api/node/(\d+)/(expire|delete|approve|exit-node|rename)$", path)
