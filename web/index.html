@@ -494,9 +494,10 @@ window.delTenant=delTenant; window.delUser=delUser; window.editTenantDesc=editTe
 // ── access-control policy (ACL) editor — superadmin only ──
 const ACL_EXAMPLE = `{
   // Starter policy. Headscale is deny-by-default: only what is listed here is allowed.
-  // Put your admin/infra tenant(s) in group:admin so you can reach every device.
+  // Put your admin/infra tenant in group:admin so it can reach every device.
+  // Headscale v2: group members are usernames with a trailing @ (e.g. "admin@").
   "groups": {
-    "group:admin": ["YOUR-ADMIN-TENANT"]
+    "group:admin": ["YOUR-ADMIN-TENANT@"]
   },
   "acls": [
     // 1) Admin reaches everything (administration & monitoring).
